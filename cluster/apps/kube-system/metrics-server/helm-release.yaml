@@ -25,4 +25,10 @@ spec:
         value: "arm64"
     args:
       - "--kubelet-insecure-tls=true"
-    #  - "--requestheader-client-ca-file"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 30Mi
+      limits:
+        cpu: 20m
+        memory: 48Mi
