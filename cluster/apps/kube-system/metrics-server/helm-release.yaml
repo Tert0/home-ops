@@ -25,4 +25,4 @@ spec:
         value: "arm64"
     args:
       - "--kubelet-insecure-tls=true"
-      - "--requestheader-client-ca-file"
+    #  - "--requestheader-client-ca-file"
