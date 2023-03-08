@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - bitnami.yaml
   - metallb.yaml
+  - descheduler.yaml
