@@ -1,0 +1,87 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: descheduler
+  namespace: kube-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: descheduler
+      version: '0.26.0'
+      sourceRef:
+        kind: HelmRepository
+        name: descheduler-charts
+        namespace: flux-system
+  values:
+    kind: Deployment
+    replicas: 2
+    leaderElection:
+      enabled: true
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - descheduler
+          topologyKey: "kubernetes.io/hostname"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 30Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+
+    tolerations:
+      - key: "arch"
+        operator: "Equal"
+        value: "arm64"
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+    
+
+    deschedulerPolicy:
+      # TODO check if config is good for prod
+      strategies:
+        "RemoveDuplicates":
+            enabled: true
+            params:
+              removeDuplicates:
+                excludeOwnerKinds:
+                - "ReplicaSet"
+        "RemovePodsViolatingInterPodAntiAffinity":
+            enabled: true
+        "LowNodeUtilization":
+            enabled: true
+            params:
+              nodeResourceUtilizationThresholds:
+                thresholds:
+                  "cpu" : 20
+                  "memory": 20
+                  "pods": 20
+                targetThresholds:
+                  "cpu" : 50
+                  "memory": 60
+                  "pods": 50
+        "PodLifeTime":
+          enabled: true
+          params:
+            podLifeTime:
+              maxPodLifeTimeSeconds: 864000 # 10 days
+        "RemovePodsViolatingNodeTaints":
+          enabled: true
+        "RemovePodsHavingTooManyRestarts":
+          enabled: true
+          params:
+            podsHavingTooManyRestarts:
+              podRestartThreshold: 50
+              includingInitContainers: true
+        "RemovePodsViolatingTopologySpreadConstraint":
+          enabled: true
+          params:
+            includeSoftConstraints: false

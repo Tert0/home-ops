@@ -16,7 +16,7 @@ sleep 10
 # TODO automate with kubectl wait
 read -p "Press enter when the basic flux components are read."
 # Add sealed secret main.key
-kubectl 
+kubectl apply -f main.key
 # Adding Cluster-wide ConfigMap
 kubectl apply -f kubernetes/flux/vars/cluster-settings.yaml
 # Adding Flux Configs (Repository and main Kustomization)
