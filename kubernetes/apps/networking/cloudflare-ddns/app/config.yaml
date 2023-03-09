@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-ddns-config
+  namespace: default
+data:
+  schedule: "@every 5m"
+  # TODO remove the urls (and create a list in the wiki)
+  domains: |
+    "*.fbsweb.de,fbsweb.de,christmas-backend.fbsweb.de,grafana.fbsweb.de,id.fbsweb.de,matrix.fbsweb.de,md.fbsweb.de,onlyoffice.fbsweb.de,seafile.fbsweb.de,status.fbsweb.de,tandoor.fbsweb.de,wiki.fbsweb.de,wireguard.fbsweb.de,www.fbsweb.de,gitea.fbsweb.de,minio.fbsweb.de,console.minio.fbsweb.de,rallly.fbsweb.de,social.fbsweb.de,ci.fbsweb.de,docker.fbsweb.de,dav.fbsweb.de,calendar.fbsweb.de,shhh.fbsweb.de,timetagger.fbsweb.de,snapdrop.fbsweb.de,mc.fbsweb.de,mindustry.fbsweb.de,jupyter.fbsweb.de,weihnachten2022.fbsweb.de,gift.fbsweb.de,plausible.fbsweb.de,immich.fbsweb.de"
+  quiet: "true"

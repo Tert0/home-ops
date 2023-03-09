@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-ddns
+  namespace: networking
+  labels:
+    app: cloudflare-ddns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-ddns
+  template:
+    metadata:
+      labels:
+        app: cloudflare-ddns
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: cloudflare-ddns
+          image: favonia/cloudflare-ddns:1.8.4
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          env:
+            - name: CF_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-token
+                  key: CLOUDFLARE_API_TOKEN
+            - name: IP4_DOMAINS
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-ddns-config
+                  key: domains
+            - name: UPDATE_CRON
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-ddns-config
+                  key: schedule
+            - name: QUIET
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-ddns-config
+                  key: quiet
+          resources:
+            requests:
+              cpu: 1m
+              memory: 15Mi
+            limits:
+              cpu: 10m
+              memory: 30Mi
