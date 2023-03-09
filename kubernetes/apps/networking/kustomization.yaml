@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - metallb/ks.yaml
   - nginx-ingress/ks.yaml
+  - cloudflare-ddns/ks.yaml
