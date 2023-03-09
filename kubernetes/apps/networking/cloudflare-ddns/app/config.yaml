@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cloudflare-ddns-config
-  namespace: default
+  namespace: networking
 data:
   schedule: "@every 5m"
   # TODO remove the urls (and create a list in the wiki)
