@@ -6,3 +6,4 @@ resources:
   - metallb.yaml
   - descheduler.yaml
   - sealed-secrets.yaml
+  - nginx-ingress.yaml
