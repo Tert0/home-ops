@@ -7,3 +7,4 @@ resources:
   - descheduler.yaml
   - sealed-secrets.yaml
   - nginx-ingress.yaml
+  - nfs-provisioner.yaml
