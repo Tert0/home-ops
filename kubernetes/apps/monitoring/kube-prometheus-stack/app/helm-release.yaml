@@ -1,0 +1,289 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: '45.5.0'
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus
+        namespace: flux-system
+  values:
+    kubeApiServer:
+      enabled: false # TODO check if necessary
+      serviceMonitor:
+        metricRelabelings:
+          - action: labeldrop
+            regex: endpoint
+          - action: labeldrop
+            regex: dry_run
+          - action: drop
+            regex: apiserver_request_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|25|40|50)
+            sourceLabels:
+              - __name__
+              - le
+        # TODO save resources by configuring: metricRelabelings or relabelings
+    kubelet:
+      enabled: true
+      serviceMonitor:
+        cAdvisor: true
+        probes: false
+        resource: false
+        cAdvisorMetricRelabelings:
+          # Drop less useful container CPU metrics.
+          - sourceLabels: [__name__]
+            action: drop
+            regex: 'container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)'
+          # Drop less useful container / always zero filesystem metrics.
+          - sourceLabels: [__name__]
+            action: drop
+            regex: 'container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)'
+          # Drop less useful / always zero container memory metrics.
+          - sourceLabels: [__name__]
+            action: drop
+            regex: 'container_memory_(mapped_file|swap)'
+          # Drop less useful container process metrics.
+          - sourceLabels: [__name__]
+            action: drop
+            regex: 'container_(file_descriptors|tasks_state|threads_max)'
+          # Drop container spec metrics that overlap with kube-state-metrics.
+          - sourceLabels: [__name__]
+            action: drop
+            regex: 'container_spec.*'
+          # Drop cgroup metrics with no pod.
+          - sourceLabels: [id, pod]
+            action: drop
+            regex: '.+;'
+          - action: drop
+            regex: container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_load_average_10s)
+            sourceLabels:
+              - __name__
+        metricRelabelings:
+          - action: drop
+            regex: kubelet_(pod_worker_latency_microseconds|pod_start_latency_microseconds|cgroup_manager_latency_microseconds|pod_worker_start_latency_microseconds|pleg_relist_latency_microseconds|pleg_relist_interval_microseconds|runtime_operations|runtime_operations_latency_microseconds|runtime_operations_errors|eviction_stats_age_microseconds|device_plugin_registration_count|device_plugin_alloc_latency_microseconds|network_plugin_operations_latency_microseconds)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: scheduler_(e2e_scheduling_latency_microseconds|scheduling_algorithm_predicate_evaluation|scheduling_algorithm_priority_evaluation|scheduling_algorithm_preemption_evaluation|scheduling_algorithm_latency_microseconds|binding_latency_microseconds|scheduling_latency_seconds)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: apiserver_(request_count|request_latencies|request_latencies_summary|dropped_requests|storage_data_key_generation_latencies_microseconds|storage_transformation_failures_total|storage_transformation_latencies_microseconds|proxy_tunnel_sync_latency_secs)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: kubelet_docker_(operations|operations_latency_microseconds|operations_errors|operations_timeout)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: reflector_(items_per_list|items_per_watch|list_duration_seconds|lists_total|short_watches_total|watch_duration_seconds|watches_total)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: etcd_(helper_cache_hit_count|helper_cache_miss_count|helper_cache_entry_count|request_cache_get_latencies_summary|request_cache_add_latencies_summary|request_latencies_summary)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: transformation_(transformation_latencies_microseconds|failures_total)
+            sourceLabels:
+            - __name__
+          - action: drop
+            regex: (admission_quota_controller_adds|crd_autoregistration_controller_work_duration|APIServiceOpenAPIAggregationControllerQueue1_adds|AvailableConditionController_retries|crd_openapi_controller_unfinished_work_seconds|APIServiceRegistrationController_retries|admission_quota_controller_longest_running_processor_microseconds|crdEstablishing_longest_running_processor_microseconds|crdEstablishing_unfinished_work_seconds|crd_openapi_controller_adds|crd_autoregistration_controller_retries|crd_finalizer_queue_latency|AvailableConditionController_work_duration|non_structural_schema_condition_controller_depth|crd_autoregistration_controller_unfinished_work_seconds|AvailableConditionController_adds|DiscoveryController_longest_running_processor_microseconds|autoregister_queue_latency|crd_autoregistration_controller_adds|non_structural_schema_condition_controller_work_duration|APIServiceRegistrationController_adds|crd_finalizer_work_duration|crd_naming_condition_controller_unfinished_work_seconds|crd_openapi_controller_longest_running_processor_microseconds|DiscoveryController_adds|crd_autoregistration_controller_longest_running_processor_microseconds|autoregister_unfinished_work_seconds|crd_naming_condition_controller_queue_latency|crd_naming_condition_controller_retries|non_structural_schema_condition_controller_queue_latency|crd_naming_condition_controller_depth|AvailableConditionController_longest_running_processor_microseconds|crdEstablishing_depth|crd_finalizer_longest_running_processor_microseconds|crd_naming_condition_controller_adds|APIServiceOpenAPIAggregationControllerQueue1_longest_running_processor_microseconds|DiscoveryController_queue_latency|DiscoveryController_unfinished_work_seconds|crd_openapi_controller_depth|APIServiceOpenAPIAggregationControllerQueue1_queue_latency|APIServiceOpenAPIAggregationControllerQueue1_unfinished_work_seconds|DiscoveryController_work_duration|autoregister_adds|crd_autoregistration_controller_queue_latency|crd_finalizer_retries|AvailableConditionController_unfinished_work_seconds|autoregister_longest_running_processor_microseconds|non_structural_schema_condition_controller_unfinished_work_seconds|APIServiceOpenAPIAggregationControllerQueue1_depth|AvailableConditionController_depth|DiscoveryController_retries|admission_quota_controller_depth|crdEstablishing_adds|APIServiceOpenAPIAggregationControllerQueue1_retries|crdEstablishing_queue_latency|non_structural_schema_condition_controller_longest_running_processor_microseconds|autoregister_work_duration|crd_openapi_controller_retries|APIServiceRegistrationController_work_duration|crdEstablishing_work_duration|crd_finalizer_adds|crd_finalizer_depth|crd_openapi_controller_queue_latency|APIServiceOpenAPIAggregationControllerQueue1_work_duration|APIServiceRegistrationController_queue_latency|crd_autoregistration_controller_depth|AvailableConditionController_queue_latency|admission_quota_controller_queue_latency|crd_naming_condition_controller_work_duration|crd_openapi_controller_work_duration|DiscoveryController_depth|crd_naming_condition_controller_longest_running_processor_microseconds|APIServiceRegistrationController_depth|APIServiceRegistrationController_longest_running_processor_microseconds|crd_finalizer_unfinished_work_seconds|crdEstablishing_retries|admission_quota_controller_unfinished_work_seconds|non_structural_schema_condition_controller_adds|APIServiceRegistrationController_unfinished_work_seconds|admission_quota_controller_work_duration|autoregister_depth|autoregister_retries|kubeproxy_sync_proxy_rules_latency_microseconds|rest_client_request_latency_seconds|non_structural_schema_condition_controller_retries)
+            sourceLabels:
+            - __name__
+
+          - action: labeldrop
+            regex: endpoint
+          - action: drop
+            regex: apiserver
+            sourceLabels:
+              - component
+          - action: drop
+            regex: etcd_request_duration_seconds_bucket
+            sourceLabels:
+              - __name__
+        # TODO save resources by configureing: cAdvisorMetricRelabelings or cAdvisorRelabelings
+    kubeControllerManager:
+      enabled: false # TODO check if necessary
+      endpoints: # TODO change later
+        - 192.168.178.173 # kube0
+        - 192.168.178.174 # kube1
+        - 192.168.178.177 # kube2
+      serviceMonitor:
+        enabled: true # TODO check if necessary
+        # TODO save resources by configuring: metricRelabelings or relabelings
+    coreDns:
+      enabled: true
+      #serviceMonitor:
+        # TODO save resources by configuring: metricRelabelings or relabelings
+    kubeEtcd:
+      enabled: true # TODO check if necessary
+      endpoints: # TODO change later
+        - 192.168.178.173 # kube0
+        - 192.168.178.174 # kube1
+        - 192.168.178.177 # kube2
+      serviceMonitor:
+        enabled: true
+        interval: 1m
+        metricRelabelings:
+          - action: labeldrop
+            regex: endpoint
+        # TODO save resources by configuring: metricRelabelings or relabelings
+    kubeScheduler:
+      enabled: false # TODO check if necessary
+      endpoints: # TODO change later
+        - 192.168.178.173 # kube0
+        - 192.168.178.174 # kube1
+        - 192.168.178.177 # kube2
+      serviceMonitor:
+        enabled: true
+        # TODO save resources by configuring: metricRelabelings or relabelings
+    kubeProxy:
+      enabled: false # TODO check if necessary. is kube-proxy deployed in this cluster?
+      endpoints: # TODO change later
+        - 192.168.178.173 # kube0
+        - 192.168.178.174 # kube1
+        - 192.168.178.177 # kube2
+    kubeStateMetrics:
+      enabled: true
+    kube-state-metrics:
+      prometheus:
+        monitor:
+          enabled: true
+          metricRelabelings:
+            - action: labeldrop
+              regex: (endpoint)
+          # TODO save resources by configuring: metricRelabelings or relabelings
+    nodeExporter:
+      enabled: true
+    prometheus-node-exporter:
+      # TODO use extraArgs to save resources
+      prometheus:
+        monitor:
+          enabled: true
+          metricRelabelings:
+            - action: drop
+              regex: ^node_mountstats_nfs_(event|operations|transport)_.+
+              sourceLabels:
+                - __name__
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels:
+                - __meta_kubernetes_endpoint_node_name
+              targetLabel: instance
+          # TODO save resources by configuring: metricRelabelings or relabelings
+    prometheusOperator:
+      tolerations:
+      - key: "arch"
+        operator: "Equal"
+        value: "arm64"
+      resources:
+        requests:
+          cpu: 10m
+          memory: 100Mi
+        limits:
+          cpu: 50m
+          memory: 150Mi
+    prometheus:
+      ingress:
+        enabled: true
+        hosts:
+          - prometheus.local.fbsweb.de
+      monitor:
+        enabled: true
+        relabelings:
+          - action: replace
+            regex: (.*)
+            replacement: $1
+            sourceLabels:
+              - __meta_kubernetes_pod_node_name
+            targetLabel: kubernetes_node
+      prometheusSpec:
+        retention: 5d
+        walCompression: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: "nfs-client"
+              resources:
+                requests:
+                  storage: 10Gi
+        tolerations:
+        - key: "arch"
+          operator: "Equal"
+          value: "arm64"
+    alertmanager:
+      enabled: true
+      ingress:
+        enabled: true
+        hosts:
+          - alertmanager.local.fbsweb.de
+      alertmanagerSpec:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 30Mi
+          limits:
+            cpu: 25m
+            memory: 50Mi
+        tolerations:
+        - key: "arch"
+          operator: "Equal"
+          value: "arm64"
+    grafana:
+      enabled: true
+      replicas: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 250Mi
+        limits:
+          cpu: 100m
+          memory: 300Mi
+      tolerations:
+        - key: "arch"
+          operator: "Equal"
+          value: "arm64"
+      persistence:
+        enabled: true
+        storageClassName: "nfs-client"
+      sidecar:
+        dashboards:
+          provider:
+            allowUiUpdates: true
+      ingress:
+        enabled: true
+        path: /
+        pathType: Prefix
+        hosts:
+          - grafana.local.fbsweb.de
+      grafana.ini:
+        server:
+          root_url: https://grafana.local.fbsweb.de/
+        auth.generic_oauth:
+          enabled: true
+          name: Keycloak
+          allow_sign_up: true
+          scopes: openid email profile roles
+          email_attribute_path: email
+          login_attribute_path: preferred_username
+          name_attribute_path: preferred_username
+          role_attribute_path: "contains(roles[*], 'admin') && 'Admin' || contains(roles[*], 'editor') && 'Editor' || 'Viewer'"
+  valuesFrom:
+    - kind: Secret
+      name: grafana-oauth-config

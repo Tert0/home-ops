@@ -8,3 +8,4 @@ resources:
   - sealed-secrets.yaml
   - nginx-ingress.yaml
   - nfs-provisioner.yaml
+  - prometheus.yaml
